@@ -13,12 +13,22 @@ except Exception:
     st.error("Error: Please add GEMINI_API_KEY to your Streamlit Secrets.")
     st.stop()
 
-# ৩. মডেল ইনিশিয়ালাইজেশন (সংশোধিত)
-# এখানে model_name এবং system_instruction সঠিকভাবে ব্যবহার করা হয়েছে
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    system_instruction="You are Shohan's AI Assistant, created by a CST student. Always be helpful, concise, and friendly."
-)
+# ৩. মডেল ইনিশিয়ালাইজেশন (Advanced Fallback System)
+try:
+    # প্রথমে চেষ্টা করবে নতুন মডেলটি লোড করতে
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction="You are Shohan's AI Assistant. Response in Bengali if possible."
+    )
+    # একটি টেস্ট রান করে দেখা মডেলটি কাজ করছে কি না
+    model.generate_content("test") 
+except Exception:
+    try:
+        # যদি উপরেরটা ফেইল করে, তবে প্রো ভার্সন ট্রাই করবে
+        model = genai.GenerativeModel(model_name="gemini-pro")
+    except Exception:
+        # সবশেষে এটি ট্রাই করবে (সবচেয়ে স্টেবল নাম)
+        model = genai.GenerativeModel(model_name="models/gemini-pro")
 
 # ৪. চ্যাট হিস্ট্রি বা মেমোরি সেটআপ
 if "chat_session" not in st.session_state:
