@@ -15,10 +15,7 @@ except Exception:
 
 # ৩. মডেল ইনিশিয়ালাইজেশন (Advanced Fallback System)
 try:
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction="You are Shohan's AI Assistant. Response in Bengali if possible."
-    )
+    model = genai.GenerativeModel("gemini-pro")
     # একটি টেস্ট রান করে দেখা মডেলটি কাজ করছে কি না
     model.generate_content("test") 
 except Exception:
