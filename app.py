@@ -14,7 +14,7 @@ except Exception:
     st.stop()
 
 # 3. Model Initialization (Fixes the 404/v1beta error)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # 4. UI Design
 st.title("🤖 Shohan's AI Assistant")
