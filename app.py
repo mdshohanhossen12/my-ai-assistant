@@ -16,7 +16,7 @@ except Exception:
 # ৩. মডেল এবং চ্যাট সেশন ইনিশিয়ালাইজেশন
 # এখানে system_instruction যোগ করা হয়েছে যাতে এআই সবসময় আপনার নির্দেশ মেনে চলে
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model = genai.GenerativeModel("gemini-1.5-flash-latest"),
     system_instruction="You are Shohan's AI Assistant. Always be helpful and friendly."
 )
 
