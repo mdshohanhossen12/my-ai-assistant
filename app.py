@@ -15,7 +15,6 @@ except Exception:
 
 # ৩. মডেল ইনিশিয়ালাইজেশন (Advanced Fallback System)
 try:
-    # প্রথমে চেষ্টা করবে নতুন মডেলটি লোড করতে
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
         system_instruction="You are Shohan's AI Assistant. Response in Bengali if possible."
