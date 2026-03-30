@@ -2,10 +2,10 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# 1. Page Configuration
+# ১. পেজ কনফিগারেশন
 st.set_page_config(page_title="Shohan AI Assistant", page_icon="🤖", layout="centered")
 
-# 2. API Key Setup from Streamlit Secrets
+# ২. এপিআই কী সেটআপ
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
@@ -13,52 +13,79 @@ except Exception:
     st.error("Error: Please add GEMINI_API_KEY to your Streamlit Secrets.")
     st.stop()
 
-# 3. Model Initialization (Fixes the 404/v1beta error)
-model = genai.GenerativeModel("gemini-1.5-flash")
+# ৩. মডেল এবং চ্যাট সেশন ইনিশিয়ালাইজেশন
+# এখানে system_instruction যোগ করা হয়েছে যাতে এআই সবসময় আপনার নির্দেশ মেনে চলে
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="You are Shohan's AI Assistant. Always be helpful and friendly."
+)
 
-# 4. UI Design
-st.title("🤖 Shohan's AI Assistant")
-st.info("Created by Shohan, a CST Student. This AI supports Image Analysis and Translation.")
+# চ্যাট হিস্ট্রি স্টোর করার জন্য Session State ব্যবহার
+if "chat_session" not in st.session_state:
+    st.session_state.chat_session = [] # এখানে আগের মেসেজগুলো জমা থাকবে
 
-# 5. Sidebar - Language Translation Settings
-st.sidebar.title("Configuration")
+# ৪. ইউআই ডিজাইন (সাইডবার)
+st.sidebar.title("⚙️ Configuration")
 target_language = st.sidebar.selectbox(
-    "Choose Response Language:",
+    "Response Language:",
     ["English", "Bengali (বাংলা)", "Hindi", "Arabic"]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.write("**Developer:** Shohan")
-st.sidebar.write("**Department:** CST")
+if st.sidebar.button("🗑️ Clear Chat"):
+    st.session_state.chat_session = []
+    st.rerun()
 
-# 6. Image Upload Section
+st.sidebar.markdown("---")
+st.sidebar.write("**Developer:** Shohan (CST Student)")
+
+# ৫. মেইন ইউআই
+st.title("🤖 Shohan's AI Assistant")
+st.info("ইমেজ অ্যানালাইসিস এবং ট্রান্সলেশন সাপোর্ট সহ উন্নত এআই।")
+
+# ৬. ইমেজ আপলোড
 uploaded_file = st.file_uploader("Upload an image (Optional)", type=["jpg", "jpeg", "png"])
 image = None
 if uploaded_file:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image Preview", use_container_width=True)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
-# 7. Chat Input & Processing
-user_query = st.chat_input("Type your message here...")
+# ৭. আগের চ্যাটগুলো স্ক্রিনে দেখানো
+for message in st.session_state.chat_session:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# ৮. নতুন চ্যাট ইনপুট এবং প্রসেসিং
+user_query = st.chat_input("আপনার প্রশ্ন লিখুন...")
 
 if user_query:
-    # Adding a translation instruction to the prompt
-    final_prompt = f"User Question: {user_query}. Please provide the response strictly in {target_language}."
-
+    # ইউজারের মেসেজ স্ক্রিনে দেখানো এবং সেভ করা
     with st.chat_message("user"):
         st.markdown(user_query)
+    st.session_state.chat_session.append({"role": "user", "content": user_query})
 
+    # এআই রেসপন্স তৈরি
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
+        with st.spinner("চিন্তা করছি..."):
             try:
-                if image:
-                    # Vision + Text response
-                    response = model.generate_content([final_prompt, image])
-                else:
-                    # Text only response
-                    response = model.generate_content(final_prompt)
+                # প্রম্পটের সাথে ভাষা যোগ করা
+                final_prompt = f"Response Language: {target_language}. Question: {user_query}"
                 
-                st.markdown(response.text)
+                # ইমেজ থাকলে ইমেজসহ, না থাকলে শুধু টেক্সট পাঠানো
+                if image:
+                    response = model.generate_content([final_prompt, image], stream=True)
+                else:
+                    response = model.generate_content(final_prompt, stream=True)
+
+                # স্ট্রিমিং ইফেক্ট (লেখা টাইপ হওয়ার মতো দেখাবে)
+                placeholder = st.empty()
+                full_text = ""
+                for chunk in response:
+                    full_text += chunk.text
+                    placeholder.markdown(full_text + "▌")
+                placeholder.markdown(full_text)
+
+                # এআই এর উত্তর হিস্ট্রিতে সেভ করা
+                st.session_state.chat_session.append({"role": "assistant", "content": full_text})
+
             except Exception as e:
-                st.error(f"An error occurred: {e}")
-                st.info("Tip: Try rebooting the app from Streamlit Dashboard.")
+                st.error(f"Error: {e}")
